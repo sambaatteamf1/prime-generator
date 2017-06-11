@@ -227,12 +227,9 @@ class PrimeNumberStore
         # Do we have primes in memory ??    
         _.each([minIndex..maxIndex], (index)->
 
-            try 
-                if primeTbl[index]? 
-                    debug("skip index:%d Already in memory. primes:%s", index, JSON.stringify(primeTbl[index]))
-                    return
-            catch e 
-                console.log(e)        
+            if primeTbl[index]? 
+                debug("skip index:%d Already in memory. primes:%s", index, JSON.stringify(primeTbl[index]))
+                return
 
             debug("add #{index} to fetch list")    
             indexesToFetch.push(index)
@@ -260,7 +257,6 @@ class PrimeNumberStore
                 # debug("index:%d min:%d max:%d", index, min, max)
                 filtered = _.filter(primeTbl[index], (prime)->
 
-
                         if prime < min  or prime > max 
                             return false
 
@@ -271,7 +267,7 @@ class PrimeNumberStore
                 )
 
                 # debug("filtered: %s:%d", filtered, filtered.length)
-                primes = _.concat(primes, filtered)
+                if filtered.length > 0 then primes = _.concat(primes, filtered)
             )
 
             if primes.length > 0 then mean = sum / primes.length
