@@ -1,0 +1,13 @@
+{
+  "appenders": [
+        {
+            "type": "file",
+            "filename": "application.log",
+            "category": [ "PrimeNumberApp","console" ]
+        },
+        {
+            "type": "console"
+        }
+  ],
+  "replaceConsole" : true
+}

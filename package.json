@@ -1,0 +1,41 @@
+{
+  "name": "prime-generator",
+  "description": "Generates prime numbers",
+  "main": "lib/js/index.js",
+  "version": "0.1.0",
+  "author": "Samba",
+  "engines": {
+    "node": "~4.4.3",
+    "npm": "2.15.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sambaatteamf1/prime-generator.git"
+  },
+  "scripts": {
+    "clean": "rm -rf lib",
+    "build": "npm run clean && grunt",
+    "test": "node_modules/.bin/mocha "
+  },
+  "dependencies": {
+    "redis": "latest",
+    "isprime": "0.0.2",
+	"lodash" : "latest",
+    "mathjs" : "3.13.3",
+    "bignumber.js" : "4.0.2",
+    "q" : "1.5.0",
+	"log4js" : "latest",
+	"debug" : "latest",
+	"prompt" : "1.0.0",
+	"async" : "2.4.1"
+  },
+  "devDependencies": {
+    "chai": "4.0.2",
+    "coffee-script": "1.6.3",
+    "grunt": "^1.0.1",
+    "grunt-contrib-coffee": "~1.0.0",
+    "grunt-contrib-watch": "^1.0.0",
+    "grunt-exec": "~1.0.0",
+    "mocha": "1.8.1"
+  }
+}
