@@ -15,26 +15,21 @@ primeNumbers = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 
 
 describe("StoreSpec - ", ->
 
-    before((done)->
+    before(()->
         Store = new TableStore()
-        done()
     )
 
-    it("Set a key/value in store", (done)->
+    it("Set a key/value in store", ()->
         Store.qSet(tableName, 0, primeNumbers)
         .then(()->
             Store.qGet(tableName, 0)
             .then((numArr)->
                 expect(numArr).to.eql(primeNumbers)
-                done()
             )
-        )
-        .fail((err)->
-            done(err)
         )
     )
 
-    it("Scan entries in a store", (done)->
+    it("Scan entries in a store", ()->
         promiseArr = []
 
         _.each([0..12], (index)->
@@ -55,15 +50,11 @@ describe("StoreSpec - ", ->
                 _.each(records, (numArr, key)->
                     expect(numArr).to.eql(primeNumbers)
                 )
-                done()
             )
-        )
-        .fail((err)->
-            done(err)
         )
     )
 
-    it("Get multiple entries from the store in the same order", (done)->
+    it("Get multiple entries from the store in the same order", ()->
         promiseArr = []
         prime1To200 = [ 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199 ]
 
@@ -79,18 +70,11 @@ describe("StoreSpec - ", ->
                 expect(_.size(numArr)).to.be.eql(_.size(fieldArr))
                 expect(numArr[0]).to.eql(primeNumbers)
                 expect(numArr[1]).to.eql(prime1To200)
-                done()
             )
-        )
-        .fail((err)->
-            done(err)
         )
     )
 
-    after((done)->
-        Store.qDeleteTable(tableName)
-        .finally(()->
-            done()
-        )
+    after(()->
+        return Store.qDeleteTable(tableName)
     )
 )

@@ -23,9 +23,9 @@ primeNumbers = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 
 
 describe("PrimeNumberStoreTest - ", ->
 
-    before((done)->
-        # Store = new MockStore()
-        Store = new RedisStore()
+    before(()->
+        Store = new MockStore()
+        # Store = new RedisStore()
 
         config = {
             chunkSize : 1024
@@ -33,35 +33,24 @@ describe("PrimeNumberStoreTest - ", ->
         }
 
         PrimeNumberGetter = new PrimeNumberStore(config, Store, PrimalityTester)
-        PrimeNumberGetter.qInit()
-        .then(()->
-            done()
-        )
-        .fail((err)->
-            done(err)
-        )
+        return PrimeNumberGetter.qInit()
     )
 
-    it("should be able to generate primes", (done)->
+    it("should be able to generate primes", ()->
         PrimeNumberGetter.qGenerate(100)
         .then(()->
             PrimeNumberGetter.qGetPrimes(0,100)
             .then((result)->
                 expect(result.primes).to.eql(primeNumbers)
-                done()
             )
-        )
-        .fail((err)->
-            done(err)
         )
     )
 
-    it("should be able to generate primes for a subset", (done)->
+    it("should be able to generate primes for a subset", ()->
         PrimeNumberGetter.qGetPrimes(0,30)
         .then((result)->
             subPrime =  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
             expect(result.primes).to.eql(subPrime)
-            done()
         )
     )
 
@@ -76,28 +65,20 @@ describe("PrimeNumberStoreTest - ", ->
     #     )
     # )
 
-    it("should persist the primes", (done)->
+    it("should persist the primes", ()->
         Store.qMGet("primeTbl", [0])
         .then((result)->
             expect(result[0]).to.have.lengthOf.above(0)
-            done()
-        )
-        .fail((err)->
-            done(err)
         )
     )
 
-    it.skip("should be able to generate primes until #{MAX_BOUND}", (done)->
+    it.skip("should be able to generate primes until #{MAX_BOUND}", ()->
         PrimeNumberGetter.qGenerate(MAX_BOUND)
         .then(()->
             PrimeNumberGetter.qGetPrimes(0, MAX_BOUND)
             .then((result)->
                 expect(result.primes).to.have.lengthOf.above(0)
-                done()
             )
-        )
-        .fail((err)->
-            done(err)
         )
     )    
 )
