@@ -130,7 +130,7 @@ qUpdatePrimeTables = (self, chunkPrimeTbl) ->
     debug('chunk index:%d', chunkIndex)
         
     # primeSumTbl[chunkIndex] = [ chunkPrimeTbl.primes.length ,  chunkPrimeTbl.sum ]    
-    primeTbl[chunkIndex] = _.uniq(_.concat(primeTbl[chunkIndex], chunkPrimeTbl.primes))
+    primeTbl[chunkIndex] = _.uniq(_.concat(primeTbl[chunkIndex] or [], chunkPrimeTbl.primes or []))
 
     # store the primes
     self.store.qSet(PRIME_TBL, chunkIndex, chunkPrimeTbl.primes)
@@ -213,6 +213,7 @@ class PrimeNumberStore
 
             promise.then((primeRecords)->
                 _.each(fieldArr, (value, index)->
+
                     unless primeRecords[index]? or primeRecords[index].length > 0
                         return
 
@@ -254,20 +255,20 @@ class PrimeNumberStore
         chain.then(()->
             _.each([minIndex..maxIndex], (index)->
 
-                # debug("index:%d min:%d max:%d", index, min, max)
-                filtered = _.filter(primeTbl[index], (prime)->
+                debug("index:%d min:%d max:%d", index, min, max)
+                filtered = _.filter(primeTbl[index] or [], (prime)->
 
                         if prime < min  or prime > max 
                             return false
 
-                        debug("%d", prime)
+                        # debug("%d", prime)
                             
                         sum = sum + prime 
                         return true    
                 )
 
-                # debug("filtered: %s:%d", filtered, filtered.length)
-                if filtered.length > 0 then primes = _.concat(primes, filtered)
+                debug("filtered: %s:%d", filtered, filtered.length)
+                if _.isArray(filtered) and filtered.length > 0 then primes = _.concat(primes, filtered)
             )
 
             if primes.length > 0 then mean = sum / primes.length
