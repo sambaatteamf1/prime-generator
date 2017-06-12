@@ -73,7 +73,7 @@ qGetMaxBound = () ->
 
     q = Q.defer()
 
-    qGetUserInput(['maxBound'], "Enter a max bound for generating primes")
+    qGetUserInput("maxBound", "Enter a max bound for generating primes")
     .then((userInput)->
         maxBound = Number(userInput.maxBound)
 
@@ -84,13 +84,18 @@ qGetMaxBound = () ->
     )
     return q.promise
 
-qGetUserInput = (labelArr, message) ->
+qGetUserInput = (label, message) ->
     q = Q.defer()
-    logger.info("#{message}:")
-    prompt.get(labelArr, (err, userInput)->
+    schema = [{
+        name : label,
+        description : message,
+        type : 'integer',
+        required : true,
+        message : "Please enter a valid number"
+    }]
+    prompt.get(schema, (err, userInput)->
 
         if err?
-            logger.error(err)
             return q.reject(err)
 
         return q.resolve(userInput)    
@@ -111,10 +116,10 @@ primeNumberProvider = (done) ->
         return done()
 
     ++sessionCounter    
-    logger.info("--------  Session #{sessionCounter} -----------")
+    logger.info("--------  Session #{sessionCounter} (To exit: CTRL-D CTRL-C) -----------")
     logger.info("")    
 
-    qGetUserInput(['lower'], "Enter a lower bound")
+    qGetUserInput("lower", "Enter a lower bound")
     .then((userInput)->
         lower = Number(userInput.lower)
 
@@ -131,7 +136,7 @@ primeNumberProvider = (done) ->
             logger.error("invalid lower bound provided. lower:#{lower}")
             return doneWrapper()
 
-        qGetUserInput(['upper'], "Enter a upper bound")
+        qGetUserInput("upper", "Enter a upper bound")
         .then((userInput)->
             upper =  Number(userInput.upper)
 
