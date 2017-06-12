@@ -1,3 +1,5 @@
+https://travis-ci.org/sambaatteamf1/prime-generator.svg?branch=master
+
 # Prime Number App
 
 Generates all prime numbers between 1 to X where X is a command line argument to the application
