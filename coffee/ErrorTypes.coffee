@@ -12,5 +12,6 @@ module.exports = {
     StoreTableDelInvalidArgError : new Error("STORE_TABLE_DEL_INVALID_ARG")
     StoreFieldDelInvalidArgError : new Error("STORE_FIELD_DEL_INVALID_ARG")
 
-    PrimeGenIntrnalError : new Error("PRIME_GEN_ERR_INTERNAL")
+    PrimeGenInternalError : new Error("PRIME_GEN_ERR_INTERNAL")
+    PrimeGenLimitError : new Error("PRIME_GEN_ERR_ELIMIT")
 }

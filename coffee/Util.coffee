@@ -36,7 +36,7 @@ isNumberValid = (x) ->
         return false
 
     if  x < 0 
-        logger.error("#{x} must be gt 0.")
+        logger.error("negative number #{x} not allowed")
         return false
     
     return true        

@@ -31,10 +31,8 @@ Q = require("q")
 # All code (excluding any external dependencies) should be committed to a GitHub repository.
 
 
-# max number that we will check for prime numbers
-MAX_BOUND = Math.pow(2, 25)
 
-maxBound = 0
+maxBound = undefined
 
 hasStartedExit = false
 sessionCounter = 0
@@ -202,6 +200,26 @@ handleError = (err) ->
 loopForEver = () ->
     async.forever(primeNumberProvider, handleError)
 
+decodeError = (err) ->
+
+    unless err? and err.message?
+        return err
+
+    msg = "Internal Error. code:#{err.message}"
+
+    maxLimit = PrimeNumberGetter.getLookupLimit()
+
+    switch err.message
+        when "PRIME_GEN_ERR_ELIMIT"
+            msg = "invalid max bound provided. can only generate primes 0-#{maxLimit}"
+            break
+
+        when "STORE_CONN_LOST"    
+            msg = "Connection to store lost."
+            break
+
+    return msg            
+
 ###
 App initialization
 ###
@@ -226,10 +244,6 @@ qGetMaxBound()
     if Util.isNumberValid(max) is false
         return
 
-    if max <=0 or max > MAX_BOUND
-        logger.error("can only generate prime numbers between 0 - #{MAX_BOUND}. #{max} is not in range")
-        return false
-
     PrimeNumberGetter.qInit()
     .then(()->
         # Generate prime numbers
@@ -240,6 +254,6 @@ qGetMaxBound()
     )
 )
 .fail((err)->
-    logger.error("exiting with error:", err)
+    logger.error("exiting with error:", decodeError(err))
     process.exit(1)
 )

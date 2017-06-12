@@ -13,9 +13,10 @@ ErrorTypes = require("./ErrorTypes")
 # persists them back to the store
 #
 # primeIndexTbl
-#     - max       : max prime number in the store
-#     - chunkSize : size of the chunk 
-#     - ntables   : number of tables  
+#     - maxBound       : max prime number in the store
+#     - ceiledMaxBound : ceiled max bound
+#     - chunkSize      : size of the chunk 
+#     - ntables        : number of tables  
 #                  (if primes are stored in more than one table)
 # 
 # The prime numbers are stored as following - primeTable
@@ -35,9 +36,15 @@ PRIME_TBL = "primeTbl"
 primeIndexTbl = {}
 primeTbl = {}
 
+# MAX Seachable limit
+PRIME_NUMBER_LOOKUP_LIMIT = Math.pow(2, 25)
+
 # cache sum in memory
 primeSumTbl = {}
 
+###
+# Load index table from store
+###
 qLoadIndexTbl = (self) ->
     q = Q.defer()
     # load primeIndexTbl
@@ -60,11 +67,12 @@ qLoadIndexTbl = (self) ->
     )
     return q.promise
 
-#
+###
 # Make a list of all the primes between
-# start - end. While we are at it
-# Also calculate the sum
-
+# start - end. While we are at it,
+# also calculate the sum of primes 
+# in this chunk
+###
 findPrimesInRange = (self, start, end) ->
     primes = []
     sum = 0
@@ -78,7 +86,6 @@ findPrimesInRange = (self, start, end) ->
 
         primes.push(value)
         sum = sum + value            
-        
     )
 
     chunkPrimeTbl =  {
@@ -93,15 +100,18 @@ findPrimesInRange = (self, start, end) ->
 
     # memUsage = process.memoryUsage()
     # debug("memory usage:" +  Math.round(memUsage.heapUsed / 1024 / 1024) + " MB")
-
     return chunkPrimeTbl
 
+###
+# This function persists the prime numbers of
+# a given chunk in store
+###
 qUpdatePrimeTables = (self, chunkPrimeTbl) ->
     q = Q.defer()    
 
     chunkIndex = Math.floor(chunkPrimeTbl.start / self.chunkSize) 
     if chunkIndex < 0
-        q.reject(ErrorTypes.PrimeGenIntrnalError)
+        q.reject(ErrorTypes.PrimeGenInternalError)
         return q.promise
 
     debug('setting primes at index:%d', chunkIndex)
@@ -119,7 +129,11 @@ qUpdatePrimeTables = (self, chunkPrimeTbl) ->
     )
     return q.promise
 
-qUpdateIndex = (self, maxBound) ->
+###
+# This function persists the prime numbers of
+# a given chunk in store
+###
+qUpdateIndex = (self, maxBound, ceiledMaxBound) ->
     q = Q.defer()
 
     if primeIndexTbl.maxBound >= maxBound
@@ -128,6 +142,8 @@ qUpdateIndex = (self, maxBound) ->
         return q.promise
 
     primeIndexTbl.maxBound = maxBound        
+    primeIndexTbl.ceiledMaxBound = ceiledMaxBound
+    
     debug("index update %s", JSON.stringify(primeIndexTbl))
     self.store.qSetTable(PRIME_INDEX_TBL, primeIndexTbl)        
     .then(()->
@@ -138,6 +154,10 @@ qUpdateIndex = (self, maxBound) ->
     )
     return q.promise
 
+###
+# This function gets the primes from the 
+# store at the give indexes
+###
 qGetPrimesAtGivenIndexes = (self, indexesToFetch) ->
 
     debug("fetching #{indexesToFetch.length} chunks from store")
@@ -176,7 +196,7 @@ qGetPrimesAtGivenIndexes = (self, indexesToFetch) ->
     )
     return q.promise    
 
-
+# Accumulator for calculating sum
 getSum = (acc, num)-> return acc + num
 
 class PrimeNumberStore
@@ -186,6 +206,10 @@ class PrimeNumberStore
         @numParallelRows = config.numParallelRows or 5
         return
 
+    # qInit
+    #        
+    # Loads the index table from store
+    #
     qInit : () ->
         self = this
         q = Q.defer()
@@ -198,6 +222,18 @@ class PrimeNumberStore
             return q.reject(err)
         )
         return q.promise         
+
+    # qGetPrimes
+    #   
+    # Get all from primes from min - max
+    # It first looks up the tables in memory, else
+    # gets them from the persistent store
+    #
+    # Returns {Object} :
+    #    - count   Number
+    #    - primes  Object (key=Number, value: Array of primes)
+    #    - sum     Number
+    #    - mean    Number 
 
     qGetPrimes : (min, max) ->
         self = this 
@@ -213,8 +249,8 @@ class PrimeNumberStore
 
         debug("Getting primes [%s-%s]", min, max)
 
-        minIndex = Math.floor(min / self.chunkSize)
-        maxIndex = Math.ceil(max / self.chunkSize)  
+        minIndex = Math.floor(min / self.chunkSize) 
+        maxIndex = Math.floor(max / self.chunkSize)  
 
         debug("retrieve primes in indexes:[%s-%s]", minIndex, maxIndex)
         
@@ -298,10 +334,19 @@ class PrimeNumberStore
         )
         return q.promise
 
+    #
+    # qGenerate
+    #        
+    # Generate primes until maxBound.
+    #
     qGenerate : (maxBound) ->
         self = this
 
         q = Q.defer()
+
+        if maxBound <=0 or maxBound > PRIME_NUMBER_LOOKUP_LIMIT
+            q.reject(ErrorTypes.PrimeGenLimitError)
+            return q.promise
 
         # skip the range, if we already have them 
         # in the store
@@ -313,7 +358,15 @@ class PrimeNumberStore
             q.resolve()
             return q.promise
 
-        range = maxBound - currentMax
+        # 
+        # Round up to the nearest chunk size
+        # Example : if chunkSize = 1024, maxBound = 10,000 
+        # 
+        # we search for primes until 10240
+        # 
+        ceiledMaxBound = Math.ceil(maxBound / primeIndexTbl.chunkSize) * primeIndexTbl.chunkSize
+
+        range = ceiledMaxBound - currentMax
 
         # split range into chunk size
         nchunks = Math.ceil(range / primeIndexTbl.chunkSize)
@@ -331,17 +384,20 @@ class PrimeNumberStore
 
             chain = chain.then(()->
 
-                start = currentMax + primeIndexTbl.chunkSize * chunkNum 
+                start = currentMax + primeIndexTbl.chunkSize * chunkNum
                 end  = start + primeIndexTbl.chunkSize
 
+                # find primes
                 chunkPrimeTbl = findPrimesInRange(self, start+1, end)
 
+                # store them
                 return qUpdatePrimeTables(self, chunkPrimeTbl)
             )
         )
 
         chain = chain.then(()->
-            return qUpdateIndex(self, maxBound)
+            # update the index
+            return qUpdateIndex(self, maxBound, ceiledMaxBound)
         )
 
         chain.then(()->
@@ -352,12 +408,12 @@ class PrimeNumberStore
         )
         return q.promise
 
-    getMaxBound: () ->
-        self = this
-
-        unless primeIndexTbl.maxBound?
-            return 0
-
-        return primeIndexTbl.maxBound
+    #
+    # getMaxBound
+    #        
+    # returns the max searchable limit of prime numbers
+    #
+    getLookupLimit: () ->
+        return PRIME_NUMBER_LOOKUP_LIMIT
 
 module.exports = PrimeNumberStore

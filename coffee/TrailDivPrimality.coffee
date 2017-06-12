@@ -2,10 +2,15 @@ math = require("mathjs")
 BigNumber = require("bignumber.js")
 
 
-# Trail division (Not for very large numbers) 
-# See https://en.wikipedia.org/wiki/Primality_test
-# Summary: All prime numbers are of the form 30k + i for i = 1, 7, 11, 13, 17, 19, 23, 29
-# Returns : true or false 
+# @function isPrime
+#
+# This function checks if a number is a prime using trail division
+# Trail division can be used for not very large numbers. See https://en.wikipedia.org/wiki/Primality_test
+# All prime numbers are of the form 30k + i for i = 1, 7, 11, 13, 17, 19, 23, 29
+# 
+# @param n
+# @returns {Boolean} : true or false 
+
 isPrime = (n) ->
     if n <= 1
         return false
@@ -28,6 +33,19 @@ isPrime = (n) ->
 
     return true                                         
 
+
+# @function isPrimeUsingBigNum
+#
+# This function checks if a big number is a prime using trail division
+# Trail division can be used for not very large numbers. 
+# See https://en.wikipedia.org/wiki/Primality_test
+#
+# All prime numbers are of the form 
+#
+# 30k + i for i = 1, 7, 11, 13, 17, 19, 23, 29
+#
+# @param n
+# @returns {Boolean} : true or false 
 
 isPrimeUsingBigNum = (n) ->
     n = new BigNumber(n)
@@ -53,6 +71,14 @@ isPrimeUsingBigNum = (n) ->
 
     return true
 
+# @function init
+#
+# This function initializes the primality tester
+# 
+# @param :
+#
+# @returns  : 
+
 init = () ->
 
 # Our method is to pre-compute a large number of primes and store them on disk. 
@@ -68,7 +94,6 @@ init = () ->
 # It has an exponential time complexity with regard to input size, though, 
 # which makes it a pseudo-polynomial algorithm. 
 # The basic algorithm requires O(n) of memory.
-
 
 module.exports = {
     isPrime :  isPrime

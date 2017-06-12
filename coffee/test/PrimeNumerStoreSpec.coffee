@@ -9,6 +9,7 @@ PrimalityTester = require("../lib/js/TrailDivPrimality")
 MockStore = require("./MockStore")
 RedisStore = require("../lib/js/Store")
 
+refPrimes = require("./RefPrimeTbl")
 
 MAX_BOUND = Math.pow(2, 25)
 # Math.pow(2, 20) = 82000  primes
@@ -48,6 +49,13 @@ describe("PrimeNumberStoreTest - ", ->
         )
     )
 
+    it("should calculate sum of primes correctly", ()->
+        PrimeNumberGetter.qGetPrimes(0,100)
+        .then((result)->
+            expect(result.sum).to.eql(1060)
+        )
+    )
+
     it("should be able to generate primes for a subset", ()->
         PrimeNumberGetter.qGetPrimes(0,30)
         .then((result)->
@@ -67,6 +75,30 @@ describe("PrimeNumberStoreTest - ", ->
         Store.qMGet("primeTbl", [0])
         .then((result)->
             expect(result[0]).to.have.lengthOf.above(0)
+        )
+    )
+
+    it("should correctly generate primes", ()->
+        PrimeNumberGetter.qGenerate(2000)
+        .then(()->
+            PrimeNumberGetter.qGetPrimes(0, 2000)
+            .then((result)->
+                primes = []
+
+                _.each(result.primes, (chunk, index)->
+                    primes = _.concat(primes, chunk)
+                )
+
+                filtered = _.filter(refPrimes, (prime, index)->
+                    if prime > 2000
+                        return false
+
+                    return true    
+                )
+
+                if _.isEqual(filtered, primes) is false
+                    expect(true).to.eql(false)           
+            )
         )
     )
 
