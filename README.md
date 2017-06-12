@@ -9,6 +9,8 @@ The prime numbers are stored in a local Redis instance. Once the prime numbers a
 application repeatedly asks the user for a lower and upper bounds (inclusive) 
 on the prime numbers to return along with their sum and mean
 
+X can take values in the range  (1 - pow(2, 25)]. 
+
 Example flow:
 
 ```
@@ -64,3 +66,27 @@ $ ./build.sh
 $ cd SOURCE_DIRECTORY
 $ ./test.sh
 ```
+### Improvements
+
+The following impovements can further be done 
+
+* The primality testing with tail division in not computationally efficient.
+  It can be improved by using - prime number sieves or probabilistic algos like rabin-miller
+
+* Limit printing of prime numbers in the console.
+
+* The prime sum table is currently being cached in memory. It can also be saved in redis
+
+* To make the implementation more generic for bigger prime numbers (and avoid overflows), 
+  big numbers must be used. In javascript, pow(2, 53) - 1 is the max safe integer
+
+* Add more command line options for - store type, primality checking method, max limit
+ 
+* Add benchmarking test suite for various primality generation methods
+
+* All data stored in redis is being serialized using strings (JSON.stringify) 
+  Performance can be improved using binary buffers.
+  
+* As the max primes limit is increased, the entire primes table can no longer be
+  stored in memory during prime number generation.
+

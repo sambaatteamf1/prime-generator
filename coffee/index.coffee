@@ -211,7 +211,7 @@ decodeError = (err) ->
 
     switch err.message
         when "PRIME_GEN_ERR_ELIMIT"
-            msg = "invalid max bound provided. can only generate primes 0-#{maxLimit}"
+            msg = "invalid max bound provided. can only generate primes 1-#{maxLimit}"
             break
 
         when "STORE_CONN_LOST"    
