@@ -29,21 +29,14 @@ ErrorTypes = require("./ErrorTypes")
 #     - 0  : [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]
 #
 
-# count and sum of all the primes in a chunk is stored in a separate table
-#
-#- primeSumTbl
-#     - 0  : [25,  1060]
-#  
-# The sum table and prime table use the same index (field value) to store related 
-# chunks. All indexes are numbers
-
 PRIME_INDEX_TBL="primeIndexTbl"
-# PRIME_SUM_TBL="primeSumTbl"
 PRIME_TBL = "primeTbl"
 
 primeIndexTbl = {}
-# primeSumTbl = {}
 primeTbl = {}
+
+# cache sum in memory
+primeSumTbl = {}
 
 qLoadIndexTbl = (self) ->
     q = Q.defer()
@@ -66,26 +59,6 @@ qLoadIndexTbl = (self) ->
         return q.reject(err)
     )
     return q.promise
-
-qLoadSumTbl = () ->
-    return Q()
-
-# qLoadSumTbl = (self) ->
-#     q = Q.defer()
-#     # load primeSumTbl from persistent store
-#     self.store.qGetTable(PRIME_SUM_TBL)
-#     .then((info)->
-#         _.each(info, (value, index)->
-#             index = Number(index)
-#             primeSumTbl[index] = value
-#         )
-#         return q.resolve(primeSumTbl)
-#     )
-#     .fail((err)->
-#         return q.reject(err)
-#     )
-#     return q.promise
-
 
 #
 # Make a list of all the primes between
@@ -117,7 +90,7 @@ findPrimesInRange = (self, start, end) ->
     }
 
     debug('found %d primes in range: [%s-%s]',  primes.length, start, end)
-    
+
     # memUsage = process.memoryUsage()
     # debug("memory usage:" +  Math.round(memUsage.heapUsed / 1024 / 1024) + " MB")
 
@@ -132,18 +105,12 @@ qUpdatePrimeTables = (self, chunkPrimeTbl) ->
         return q.promise
 
     debug('setting primes at index:%d', chunkIndex)
-    
-    # primeSumTbl[chunkIndex] = [ chunkPrimeTbl.primes.length ,  chunkPrimeTbl.sum ]    
+    primeSumTbl[chunkIndex] = chunkPrimeTbl.sum
     primeTbl[chunkIndex] = _.uniq(_.concat(primeTbl[chunkIndex] or [], chunkPrimeTbl.primes or []))
 
     # store the primes
     self.store.qSet(PRIME_TBL, chunkIndex, chunkPrimeTbl.primes)
     .then(()->
-        # # store the metadata
-        # self.store.qSet(PRIME_SUM_TBL, chunkIndex, primeSumTbl[chunkIndex])
-        # .then(()->
-        #     return q.resolve()
-        # )
         return q.resolve()
     )
     .fail((err)->
@@ -192,6 +159,7 @@ qGetPrimesAtGivenIndexes = (self, indexesToFetch) ->
                         return
 
                     debug('caching %d primes for index : %d', primeRecords[index].length, value)
+                    primeSumTbl[value] = primeRecords[index].reduce(getSum, 0)
                     primeTbl[value] = primeRecords[index]
                 )
             )
@@ -224,11 +192,7 @@ class PrimeNumberStore
         # Load index table
         qLoadIndexTbl(self)
         .then(()->
-            # Load sum table
-            qLoadSumTbl(self)
-            .then(()->
-                return q.resolve()
-            )
+            return q.resolve()
         )
         .fail((err)->
             return q.reject(err)
@@ -299,7 +263,7 @@ class PrimeNumberStore
                     debug("processed index:%d added %d primes", index, arrLen)
                     primes[index] = arr
                     nprimes += arrLen
-                    sum += arr.reduce(getSum, 0)
+                    sum += primeSumTbl[index]
                     return
 
                 filtered = _.filter(arr, (prime)->
