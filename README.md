@@ -12,11 +12,12 @@ on the prime numbers to return along with their sum and mean
 ```
 $ node app.js --h
 
-Usage: nodejs app.js [-s <redis,memory>]  [-c <chunkSize>] [-P <parallel>] X
+Usage: nodejs app.js [-s <redis,memory>]  [-c <chunkSize>] [-P <parallel>] [ -m <method> ] X
 
    -s  --store : store for prime numbers. 'redis' or 'memory'. Default = redis
    -c  --chunk : number of prime numbers to store in one row. Default = 1024
    -P  --parallel : number of rows to fetch from store in parallel'. Default = 5
+   -m  --method : primality check method 'division' or 'sieve' '. Default = sieve
 
 X can take values in the range  (1 - pow(2, 25)]. 
 ```
@@ -80,8 +81,9 @@ $ ./test.sh
 
 The following impovements can further be done 
 
-* The primality testing with tail division in not computationally efficient.
-  It can be improved by using - prime number sieves or probabilistic algos like rabin-miller
+* The primality testing with deterministic algos is slower (trial divison, sieve).
+  The seive algorithm consumes memory proportional to the max number of the sieve. 
+  Primality testing can be improved using probabilistic algos like rabin-miller
 
 * Limit printing of prime numbers in the console.
 
@@ -90,7 +92,7 @@ The following impovements can further be done
 * To make the implementation more generic for bigger prime numbers (and avoid overflows), 
   big numbers must be used. In javascript, pow(2, 53) - 1 is the max safe integer
 
-* Add more command line options for - store type, primality checking method, max limit
+* Add more command line options for - max limit
  
 * Add benchmarking test suite for various primality generation methods
 

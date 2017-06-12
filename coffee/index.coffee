@@ -4,7 +4,8 @@ async = require("async")
 Util = require("./Util")
 _ = require("lodash")
 PrimeNumberStore = require("./PrimeNumberStore")
-PrimalityTester = require("./TrailDivPrimality")
+DivisionPrimalityTester = require("./TrailDivPrimality")
+SievePrimalityTester = require("./SieveOfEratosthenes")
 Store = require("./Store")
 MockStore = require("../../test/MockStore")
 logger = require("./Log").getLogger("PrimeNumberApp")
@@ -231,10 +232,11 @@ App initialization
 ###
 
 help = () ->
-    console.log("Usage: \n#{process.argv[0]} #{process.argv[1]} [-s <redis,memory>]  [-c <chunkSize>] [-P <parallel>] \n")
+    console.log("Usage: \n#{process.argv[0]} #{process.argv[1]} [-s <store>]  [-c <chunkSize>] [-P <parallel>] [ -m <method> ]\n")
     console.log("    -s  --store : store for prime numbers. 'redis' or 'memory'. Default = redis")
     console.log("    -c  --chunk : number of prime numbers to store in one row. Default = 1024")
     console.log("    -P  --parallel : number of rows to fetch from store in parallel'. Default = 5")
+    console.log("    -m  --method : primality check method 'division' or 'sieve' '. Default = sieve")
     process.exit(0)
     return
 
@@ -246,10 +248,12 @@ opts = {
         "s" : "store"
         "c" : "chunk"   
         "P" : "parallel"
+        "m" : "method"
         "h" : "help"
     }
     default : {
         "s" : "redis"
+        "m" : "sieve"
         "c" : 1024
         "P" : 5
     }
@@ -261,6 +265,7 @@ args = parseArgs(process.argv.slice(2), opts)
 maxBound = args["_"][0]
 
 if args["s"]? then storeType = _.toLower(args["s"])
+if args["m"]? then primalityTestMethod = _.toLower(args["m"])
 if args["c"]? then chunkSize = _.toInteger(args["c"]) 
 if args["P"]? then numParallelRows = _.toInteger(args["P"])
 if args["h"]? then help()
@@ -271,10 +276,17 @@ switch storeType
     else        
         Store = new Store()
 
+switch primalityTestMethod 
+    when "division"
+        PrimalityTester = DivisionPrimalityTester
+    else 
+        PrimalityTester = SievePrimalityTester
+
 config = {
     chunkSize : chunkSize
     numParallelRows : numParallelRows
 }
+
 
 PrimeNumberGetter = new PrimeNumberStore(config, Store, PrimalityTester) 
 

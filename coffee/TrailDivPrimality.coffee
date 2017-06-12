@@ -11,6 +11,7 @@ BigNumber = require("bignumber.js")
 # @param n
 # @returns {Boolean} : true or false 
 
+
 isPrime = (n) ->
     if n <= 1
         return false
@@ -81,19 +82,6 @@ isPrimeUsingBigNum = (n) ->
 
 init = () ->
 
-# Our method is to pre-compute a large number of primes and store them on disk. 
-# If n is within the bounds of the pre-computed list, it is easy to find the next prime. 
-# But if n is too large, we revert to checking individual candidates for primality.
-
-# The sieve of Eratosthenes is a popular way to benchmark computer performance.
-# As can be seen from the above by removing all constant offsets and constant 
-# factors and ignoring terms that tend to zero as n approaches infinity, the time 
-# complexity of calculating all primes below n in the random access machine model 
-# is O(n log log n) operations, a direct consequence of the fact that the prime 
-# harmonic series asymptotically approaches log log n. 
-# It has an exponential time complexity with regard to input size, though, 
-# which makes it a pseudo-polynomial algorithm. 
-# The basic algorithm requires O(n) of memory.
 
 module.exports = {
     isPrime :  isPrime

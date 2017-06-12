@@ -5,7 +5,10 @@ expect = chai.expect
 _ = require("lodash")
 
 PrimeNumberStore = require("../lib/js/PrimeNumberStore")
-PrimalityTester = require("../lib/js/TrailDivPrimality")
+
+DivisionPrimalityTester = require("../lib/js/TrailDivPrimality")
+SievePrimalityTester = require("../lib/js/SieveOfEratosthenes")
+
 MockStore = require("./MockStore")
 RedisStore = require("../lib/js/Store")
 
@@ -35,7 +38,8 @@ describe("PrimeNumberStoreTest - ", ->
             numParallelRows : 5
         }
 
-        PrimeNumberGetter = new PrimeNumberStore(config, Store, PrimalityTester)
+        PrimeNumberGetter = new PrimeNumberStore(config, Store, DivisionPrimalityTester)
+        # PrimeNumberGetter = new PrimeNumberStore(config, Store, SievePrimalityTester)
         return PrimeNumberGetter.qInit()
     )
 

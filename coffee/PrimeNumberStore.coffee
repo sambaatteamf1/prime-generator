@@ -143,7 +143,7 @@ qUpdateIndex = (self, maxBound, ceiledMaxBound) ->
 
     primeIndexTbl.maxBound = maxBound        
     primeIndexTbl.ceiledMaxBound = ceiledMaxBound
-    
+
     debug("index update %s", JSON.stringify(primeIndexTbl))
     self.store.qSetTable(PRIME_INDEX_TBL, primeIndexTbl)        
     .then(()->
@@ -202,6 +202,7 @@ getSum = (acc, num)-> return acc + num
 class PrimeNumberStore
 
     constructor: (config, @store, @primalityTester) ->
+
         @chunkSize = config.chunkSize or 1024
         @numParallelRows = config.numParallelRows or 5
         return
@@ -348,6 +349,7 @@ class PrimeNumberStore
             q.reject(ErrorTypes.PrimeGenLimitError)
             return q.promise
 
+
         # skip the range, if we already have them 
         # in the store
         currentMax = primeIndexTbl.maxBound or 0
@@ -365,6 +367,9 @@ class PrimeNumberStore
         # we search for primes until 10240
         # 
         ceiledMaxBound = Math.ceil(maxBound / primeIndexTbl.chunkSize) * primeIndexTbl.chunkSize
+
+        # Initialize primality tester 
+        self.primalityTester.init(ceiledMaxBound)
 
         range = ceiledMaxBound - currentMax
 
@@ -384,7 +389,11 @@ class PrimeNumberStore
 
             chain = chain.then(()->
 
-                start = currentMax + primeIndexTbl.chunkSize * chunkNum
+                chunkIndex = Math.floor(currentMax / primeIndexTbl.chunkSize) + chunkNum
+
+                debug("processing chunk index:%d", chunkIndex)
+
+                start = chunkIndex * primeIndexTbl.chunkSize 
                 end  = start + primeIndexTbl.chunkSize
 
                 # find primes
