@@ -5,8 +5,8 @@ expect = chai.expect
 _ = require("lodash")
 Q = require("q")
 
-TableStore = require("../lib/js/Store")
-
+# TableStore = require("../lib/js/Store")
+TableStore = require("./MockStore")
 tableName = "testPrimeTable"
 Store = null
 
