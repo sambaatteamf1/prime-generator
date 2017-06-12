@@ -77,6 +77,30 @@ $ ./build.sh
 $ cd SOURCE_DIRECTORY
 $ ./test.sh
 ```
+### Code Organization
+This section shows the code organization in this project.
+
+```
+prime-generator
+    |           +--test 
+    |           | (unit test files) 
+    + coffee----+
+    | (source files)
+    |              
+    |
+    + lib (compiled js files)
+    |
+    + node_modules (external dependencies)
+    |
+    + test (compiled test files) 
+    |
+   app.js 
+ (starter js file)
+ 
+```
+The implementation is done in coffeescript. The code is compiled into javascript using grunt. <br>
+node_modules, lib and test directories are created after running the build.sh script.
+
 ### Improvements
 
 The following impovements can further be done 
