@@ -15,7 +15,7 @@
   "scripts": {
     "clean": "rm -rf lib",
     "build": "npm run clean && grunt",
-    "test": "npm build && ./node_modules/.bin/mocha "
+    "test": "npm run build && ./node_modules/.bin/mocha "
   },
   "dependencies": {
     "redis": "latest",
