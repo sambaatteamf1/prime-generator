@@ -9,7 +9,17 @@ The prime numbers are stored in a local Redis instance. Once the prime numbers a
 application repeatedly asks the user for a lower and upper bounds (inclusive) 
 on the prime numbers to return along with their sum and mean
 
+```
+$ node app.js --h
+
+Usage: nodejs app.js [-s <redis,memory>]  [-c <chunkSize>] [-P <parallel>] X
+
+   -s  --store : store for prime numbers. 'redis' or 'memory'. Default = redis
+   -c  --chunk : number of prime numbers to store in one row. Default = 1024
+   -P  --parallel : number of rows to fetch from store in parallel'. Default = 5
+
 X can take values in the range  (1 - pow(2, 25)]. 
+```
 
 Example flow:
 

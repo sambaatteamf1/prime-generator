@@ -6,9 +6,10 @@ _ = require("lodash")
 PrimeNumberStore = require("./PrimeNumberStore")
 PrimalityTester = require("./TrailDivPrimality")
 Store = require("./Store")
-# Store = require("../../test/MockStore")
+MockStore = require("../../test/MockStore")
 logger = require("./Log").getLogger("PrimeNumberApp")
 Q = require("q")
+
 
 # Description
 # ===========
@@ -229,13 +230,50 @@ decodeError = (err) ->
 App initialization
 ###
 
-maxBound = process.argv[2]
+help = () ->
+    console.log("Usage: \n#{process.argv[0]} #{process.argv[1]} [-s <redis,memory>]  [-c <chunkSize>] [-P <parallel>] \n")
+    console.log("    -s  --store : store for prime numbers. 'redis' or 'memory'. Default = redis")
+    console.log("    -c  --chunk : number of prime numbers to store in one row. Default = 1024")
+    console.log("    -P  --parallel : number of rows to fetch from store in parallel'. Default = 5")
+    process.exit(0)
+    return
 
-Store = new Store()
+unknownOption = (opt) ->
+    return true
+
+opts = {
+    alias : {
+        "s" : "store"
+        "c" : "chunk"   
+        "P" : "parallel"
+        "h" : "help"
+    }
+    default : {
+        "s" : "redis"
+        "c" : 1024
+        "P" : 5
+    }
+    unknown : unknownOption
+}
+
+parseArgs = require('minimist')
+args = parseArgs(process.argv.slice(2), opts)
+maxBound = args["_"][0]
+
+if args["s"]? then storeType = _.toLower(args["s"])
+if args["c"]? then chunkSize = _.toInteger(args["c"]) 
+if args["P"]? then numParallelRows = _.toInteger(args["P"])
+if args["h"]? then help()
+
+switch storeType
+    when "memory"
+        Store = new MockStore()
+    else        
+        Store = new Store()
 
 config = {
-    chunkSize : 1024
-    numParallelRows : 5
+    chunkSize : chunkSize
+    numParallelRows : numParallelRows
 }
 
 PrimeNumberGetter = new PrimeNumberStore(config, Store, PrimalityTester) 
