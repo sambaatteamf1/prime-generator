@@ -41,8 +41,6 @@ describe("TrailDivision PrimalityTest - ", ->
             if isPrime is true
                 ++count
 
-            # if isPrime is true then console.log("#{n} is prime")
-
             if primeTable[n] is true and isPrime isnt true 
                 expect(n).to.equal(!isPrime)
         )

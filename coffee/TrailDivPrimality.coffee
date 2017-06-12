@@ -53,10 +53,11 @@ isPrimeUsingBigNum = (n) ->
 
     return true
 
+init = () ->
+
 # Our method is to pre-compute a large number of primes and store them on disk. 
 # If n is within the bounds of the pre-computed list, it is easy to find the next prime. 
 # But if n is too large, we revert to checking individual candidates for primality.
-
 
 # The sieve of Eratosthenes is a popular way to benchmark computer performance.
 # As can be seen from the above by removing all constant offsets and constant 
@@ -69,13 +70,8 @@ isPrimeUsingBigNum = (n) ->
 # The basic algorithm requires O(n) of memory.
 
 
-
-# Probablistic tests:
-# Miller-Rabin test with n pseudorandomly chosen bases as well as a Baillie-PSW test.
-
-
-
 module.exports = {
     isPrime :  isPrime
     isPrimeUsingBigNum :  isPrimeUsingBigNum
+    init : init
 }

@@ -30,6 +30,7 @@ class RedisStore
 
         options = {
             socket_keepalive : true
+            detect_buffers : true
         }
 
         self.client = redis.createClient(self.port, self.host, options)

@@ -2,6 +2,7 @@
 prompt = require('prompt')
 async = require("async")
 Util = require("./Util")
+_ = require("lodash")
 PrimeNumberStore = require("./PrimeNumberStore")
 PrimalityTester = require("./TrailDivPrimality")
 Store = require("./Store")
@@ -46,14 +47,24 @@ process.on('SIGTERM', () =>
     console.log('Received SIGTERM. Exiting');
 )
 
-printResult = (min, max, primes, sum, mean) ->
-    unless primes.length  > 0
+printResult = (min, max, primes, count, sum, mean) ->
+    unless count  > 0
         logger.info("No primes in range. Let's try again.")
         return
 
     logger.info("Result:")
-    logger.info("Prime numbers in [#{min}-#{max}] : ", JSON.stringify(primes))
-    logger.info("Count:", primes.length)
+
+    logger.info("Prime numbers in [#{min}-#{max}] : #{count} ")
+
+    _.each(primes, (arr, index)->
+        arrarr = _.chunk(arr, 32)
+
+        _.each(arrarr, (obj) ->
+            logger.info(obj)
+        )
+    )
+
+    
     logger.info("Sum: ", sum)
     logger.info("Mean: ", mean)
     return
@@ -127,7 +138,10 @@ primeNumberProvider = (done) ->
             upper =  Number(userInput.upper)
 
             # get primes 
-            primes = []
+            primes = {}
+
+            # number of primes
+            count = 0
 
             # calculate sum
             sum = 0
@@ -157,7 +171,7 @@ primeNumberProvider = (done) ->
             if range > 0 
                 PrimeNumberGetter.qGetPrimes(lower, upper)
                 .then((result)->
-                    printResult(lower, upper, result.primes, result.sum, result.mean)
+                    printResult(lower, upper, result.primes, result.count,  result.sum, result.mean)
                 )
                 .fail((err)->
                     logger.error("failed to get primes. Error:", err)
@@ -168,10 +182,11 @@ primeNumberProvider = (done) ->
                 )
                 return
             else if range is 0 and PrimalityTester.isPrime(lower) is true   
-                primes.push(lower)
+                primes[0] = [lower]
+                ++count
                 sum = mean = lower
 
-            printResult(lower, upper, primes, sum, mean)
+            printResult(lower, upper, primes, count, sum, mean)
             doneWrapper()    
         )
     )

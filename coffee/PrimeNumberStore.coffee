@@ -57,6 +57,9 @@ qLoadIndexTbl = (self) ->
         }
 
         primeIndexTbl = _.extend({}, defaults , info)
+        _.each(primeIndexTbl, (value, key) ->
+            primeIndexTbl[key] = Number(value)
+        )
         return q.resolve(primeIndexTbl)
     )
     .fail((err)->
@@ -100,9 +103,7 @@ findPrimesInRange = (self, start, end) ->
         if self.primalityTester.isPrime(value) isnt true
             return
 
-        debug(" %d ", value)
         primes.push(value)
-
         sum = sum + value            
         
     )
@@ -115,20 +116,23 @@ findPrimesInRange = (self, start, end) ->
         sum : sum
     }
 
+    debug('found %d primes in range: [%s-%s]',  primes.length, start, end)
+    
+    # memUsage = process.memoryUsage()
+    # debug("memory usage:" +  Math.round(memUsage.heapUsed / 1024 / 1024) + " MB")
+
     return chunkPrimeTbl
 
 qUpdatePrimeTables = (self, chunkPrimeTbl) ->
     q = Q.defer()    
 
-    debug('primes:%s', JSON.stringify(chunkPrimeTbl))
-
-    chunkIndex = _.floor(chunkPrimeTbl.start / self.chunkSize) 
+    chunkIndex = Math.floor(chunkPrimeTbl.start / self.chunkSize) 
     if chunkIndex < 0
         q.reject(ErrorTypes.PrimeGenIntrnalError)
         return q.promise
 
-    debug('chunk index:%d', chunkIndex)
-        
+    debug('setting primes at index:%d', chunkIndex)
+    
     # primeSumTbl[chunkIndex] = [ chunkPrimeTbl.primes.length ,  chunkPrimeTbl.sum ]    
     primeTbl[chunkIndex] = _.uniq(_.concat(primeTbl[chunkIndex] or [], chunkPrimeTbl.primes or []))
 
@@ -167,6 +171,45 @@ qUpdateIndex = (self, maxBound) ->
     )
     return q.promise
 
+qGetPrimesAtGivenIndexes = (self, indexesToFetch) ->
+
+    debug("fetching #{indexesToFetch.length} chunks from store")
+
+    fieldArrArr = _.chunk(indexesToFetch, self.numParallelRows) or []
+
+    q = Q.defer()
+
+    chain = Q()
+
+    _.each(fieldArrArr, (fieldArr)->
+        chain = chain.then(()-> 
+            promise = self.store.qMGet(PRIME_TBL, fieldArr)
+            promise.then((primeRecords)->
+
+                _.each(fieldArr, (value, index)->
+
+                    unless _.isArray(primeRecords[index]) and primeRecords[index].length > 0
+                        return
+
+                    debug('caching %d primes for index : %d', primeRecords[index].length, value)
+                    primeTbl[value] = primeRecords[index]
+                )
+            )
+            return promise            
+        )
+    )
+
+    chain.then(()->
+        debug("fetching #{indexesToFetch.length} chunks from store done")
+        return q.resolve()
+    )
+    .fail((err)->
+        return q.reject(err)
+    )
+    return q.promise    
+
+
+getSum = (acc, num)-> return acc + num
 
 class PrimeNumberStore
 
@@ -194,89 +237,95 @@ class PrimeNumberStore
 
     qGetPrimes : (min, max) ->
         self = this 
-        primes = []
+        primes = {}
+        nprimes = 0
         sum = 0
         mean = 0
         indexesToFetch = []
 
         if ((_.inRange(min, 0, primeIndexTbl.maxBound+1) isnt true) or  
             (_.inRange(max, 0, primeIndexTbl.maxBound+1) isnt true)) 
-           return Q({ sum : sum , mean : mean, primes : primes })
+           return Q({ sum : sum , count : 0,  mean : mean, primes : primes })
 
         debug("Getting primes [%s-%s]", min, max)
 
-        minIndex = _.floor(min / self.chunkSize)
-        maxIndex = _.ceil(max / self.chunkSize)  
+        minIndex = Math.floor(min / self.chunkSize)
+        maxIndex = Math.ceil(max / self.chunkSize)  
 
-        qGetPrimesAtGivenIndexes = (fieldArr) ->
-            promise = self.store.qMGet(PRIME_TBL, fieldArr)
-
-            promise.then((primeRecords)->
-                _.each(fieldArr, (value, index)->
-
-                    unless primeRecords[index]? or primeRecords[index].length > 0
-                        return
-
-                    debug('caching primes %s for index : %d', JSON.stringify(primeRecords[index]), value)
-                    primeTbl[value] = primeRecords[index]
-                )
-            )
-            return promise
-
-        debug("retrieve primes in range:[%s-%s]", minIndex, maxIndex)
-            
+        debug("retrieve primes in indexes:[%s-%s]", minIndex, maxIndex)
+        
         # Do we have primes in memory ??    
         _.each([minIndex..maxIndex], (index)->
 
-            if primeTbl[index]? 
-                debug("skip index:%d Already in memory. primes:%s", index, JSON.stringify(primeTbl[index]))
+            if _.isArray(primeTbl[index])
+                debug("skip index:%d Already in memory. primes:%d", index, primeTbl[index].length)
                 return
 
             debug("add #{index} to fetch list")    
             indexesToFetch.push(index)
         )
 
-        if indexesToFetch.length > 0 
-            debug("fetching #{indexesToFetch.length} chunks from store")
-
-        fieldArrArr = _.chunk(indexesToFetch, self.numParallelRows)
-
         q = Q.defer()
 
         # Get all the primes
         chain = Q()
 
-        _.each(fieldArrArr or [], (fieldArr)->
-            chain = chain.then(()-> 
-                return qGetPrimesAtGivenIndexes(fieldArr)
-            )
-        )
+        chain = chain.then(()->
+            unless indexesToFetch.length > 0
+                return
+
+            return qGetPrimesAtGivenIndexes(self, indexesToFetch)    
+        )            
 
         chain.then(()->
+
             _.each([minIndex..maxIndex], (index)->
 
-                debug("index:%d min:%d max:%d", index, min, max)
-                filtered = _.filter(primeTbl[index] or [], (prime)->
+                arr = primeTbl[index]
+
+                unless _.isArray(arr)
+                    return
+
+                arrLen = arr.length
+                unless arrLen > 0
+                    return
+
+                # return if no primes in the index are in (min - max) range                    
+                if min > arr[arrLen-1] or max < arr[0]
+                    return
+
+                # Include all the primes in this index
+                unless _.inRange(min, arr[0], arr[arrLen-1]) or _.inRange(max, arr[0], arr[arrLen-1])
+                    debug("processed index:%d added %d primes", index, arrLen)
+                    primes[index] = arr
+                    nprimes += arrLen
+                    sum += arr.reduce(getSum, 0)
+                    return
+
+                filtered = _.filter(arr, (prime)->
 
                         if prime < min  or prime > max 
                             return false
-
-                        # debug("%d", prime)
                             
                         sum = sum + prime 
                         return true    
                 )
 
-                debug("filtered: %s:%d", filtered, filtered.length)
-                if _.isArray(filtered) and filtered.length > 0 then primes = _.concat(primes, filtered)
+                debug("processed index #{index} add filtered #{filtered.length} primes")
+
+                if _.isArray(filtered) and filtered.length > 0 
+                    primes[index] = filtered
+                    nprimes += filtered.length
             )
 
-            if primes.length > 0 then mean = sum / primes.length
+            # if primes.length > 0 then mean = sum / primes.length
+            if nprimes > 0 then mean = sum / nprimes
 
             result = {
                 sum : sum
                 mean : mean
                 primes : primes
+                count : nprimes
             }
             return q.resolve(result)
         ).fail((err)->
@@ -303,7 +352,7 @@ class PrimeNumberStore
         range = maxBound - currentMax
 
         # split range into chunk size
-        nchunks = _.ceil(range / primeIndexTbl.chunkSize)
+        nchunks = Math.ceil(range / primeIndexTbl.chunkSize)
 
         if nchunks <= 0 
             q.resolve()
@@ -322,6 +371,7 @@ class PrimeNumberStore
                 end  = start + primeIndexTbl.chunkSize
 
                 chunkPrimeTbl = findPrimesInRange(self, start+1, end)
+
                 return qUpdatePrimeTables(self, chunkPrimeTbl)
             )
         )

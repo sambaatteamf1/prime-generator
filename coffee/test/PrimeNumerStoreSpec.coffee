@@ -9,12 +9,15 @@ PrimalityTester = require("../lib/js/TrailDivPrimality")
 MockStore = require("./MockStore")
 RedisStore = require("../lib/js/Store")
 
-MAX_BOUND = Math.pow(2, 10)
 
+MAX_BOUND = Math.pow(2, 25)
 # Math.pow(2, 20) = 82000  primes
 # Math.pow(2, 21) = 155586 primes
 # Math.pow(2, 22) = 295922 primes
-# Math.pow(2, 23) = 564138 primes (60 s)
+# Math.pow(2, 23) = 
+# Math.pow(2, 25) = 2063689 primes (22 s)
+# Math.pow(2, 26) = 3957809 primes (60 s)
+# Math.pow(2, 27) = 7603553 primes (121 s)
 
 PrimeNumberGetter = null
 Store = null 
@@ -25,7 +28,6 @@ describe("PrimeNumberStoreTest - ", ->
 
     before(()->
         Store = new MockStore()
-        # Store = new RedisStore()
 
         config = {
             chunkSize : 1024
@@ -41,7 +43,7 @@ describe("PrimeNumberStoreTest - ", ->
         .then(()->
             PrimeNumberGetter.qGetPrimes(0,100)
             .then((result)->
-                expect(result.primes).to.eql(primeNumbers)
+                expect(result.primes[0]).to.eql(primeNumbers)
             )
         )
     )
@@ -50,20 +52,16 @@ describe("PrimeNumberStoreTest - ", ->
         PrimeNumberGetter.qGetPrimes(0,30)
         .then((result)->
             subPrime =  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
-            expect(result.primes).to.eql(subPrime)
+            expect(result.primes[0]).to.eql(subPrime)
         )
     )
 
-    # it("should be able handle out-of-range query", (done)->
-    #     PrimeNumberGetter.qGetPrimes(200,300)
-    #     .then((result)->
-    #         expect(result.primes.length).to.eql(0)
-    #         done()
-    #     )
-    #     .fail((err)->
-    #         done(err)
-    #     )
-    # )
+    it("should be able handle out-of-range query", ()->
+        PrimeNumberGetter.qGetPrimes(200, 300)
+        .then((result)->
+            expect(result.count).to.eql(0)
+        )
+    )
 
     it("should persist the primes", ()->
         Store.qMGet("primeTbl", [0])
@@ -77,7 +75,7 @@ describe("PrimeNumberStoreTest - ", ->
         .then(()->
             PrimeNumberGetter.qGetPrimes(0, MAX_BOUND)
             .then((result)->
-                expect(result.primes).to.have.lengthOf.above(0)
+                expect(result.count).to.equal(2063689)
             )
         )
     )    

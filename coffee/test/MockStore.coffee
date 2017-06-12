@@ -37,14 +37,10 @@ class MockStore
             q.reject(ErrorTypes.StoreGetInvalidArgError)
             return q.promise
 
-        records = []
+        records = {}
 
-        _.each(rowArr, (index)->
-            rowid = rowArr[index]
-            unless rowid?
-                return 
-            
-            records[index] = htable[rowid] or []
+        _.each(rowArr, (index, value)->
+            records[index] = htable[value] or []
         )
 
         q.resolve(records)
