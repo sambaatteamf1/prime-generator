@@ -1,4 +1,5 @@
-https://travis-ci.org/sambaatteamf1/prime-generator.svg?branch=master
+### Status
+[![Build Status](https://travis-ci.org/sambaatteamf1/prime-generator.svg?branch=master)](https://travis-ci.org/sambaatteamf1/prime-generator)
 
 # Prime Number App
 
